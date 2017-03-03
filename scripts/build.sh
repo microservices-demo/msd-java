@@ -29,4 +29,4 @@ $DOCKER_CMD build \
     --build-arg BUILD_VERSION=$BUILD_VERSION \
     --build-arg BUILD_DATE=$BUILD_DATE \
     --build-arg COMMIT=$COMMIT \
-    -t ${DOCKER_REPO}:${COMMIT} $CODE_DIR/Dockerfile;
+    -t ${DOCKER_REPO}:${COMMIT} $CODE_DIR;
