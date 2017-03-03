@@ -1,9 +1,6 @@
-language: java
 sudo: required
 services:
   - docker
-jdk:
-  - oraclejdk8
 install: true
 
 env:
@@ -11,7 +8,7 @@ env:
 
 script:
   - set -e
-  - travis_wait ./scripts/build.sh;
+  - ./scripts/build.sh;
 
 after_success:
   - set -e;

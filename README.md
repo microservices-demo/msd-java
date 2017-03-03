@@ -1,2 +1,2 @@
 # msd-java
-A base image for all the Java based services
+A base image for all the Java based services.
