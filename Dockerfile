@@ -14,6 +14,7 @@ RUN	addgroup -g ${SERVICE_GID} ${SERVICE_GROUP} && \
 	setcap 'cap_net_bind_service=+ep' $(readlink -f $(which java))
 
 COPY java.sh /usr/local/bin/java.sh
+RUN chmod +x /usr/local/bin/java.sh
 
 ARG BUILD_DATE
 ARG BUILD_VERSION
