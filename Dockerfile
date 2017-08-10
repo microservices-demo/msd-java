@@ -1,4 +1,4 @@
-FROM java:openjdk-8-alpine
+FROM openjdk:8u131-jdk-alpine
 
 ENV	SERVICE_USER=myuser \
 	SERVICE_UID=10001 \
