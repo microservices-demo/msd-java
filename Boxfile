@@ -1,0 +1,62 @@
+def getenv_or_die e
+  v = getenv(e)
+  raise "Environment variable \"#{e}\" is not set" if v.empty?
+  return v
+end
+
+def create_user_and_group
+  run 'addgroup -g ${SERVICE_GID} ${SERVICE_GROUP}'
+  run 'adduser -g "${SERVICE_NAME} user" -D -H -G ${SERVICE_GROUP} -s /sbin/nologin -u ${SERVICE_UID} ${SERVICE_USER}'
+end
+
+def configure_java
+  run 'apk add --no-progress --update libcap'
+
+  run 'mkdir /lib64'
+  run 'ln -s /usr/lib/jvm/java-1.8-openjdk/jre/lib/amd64/server/libjvm.so /lib/libjvm.so'
+  run 'ln -s /usr/lib/jvm/java-1.8-openjdk/lib/amd64/jli/libjli.so /lib/libjli.so'
+  run 'setcap "cap_net_bind_service=+ep" $(readlink -f $(which java))'
+
+  copy 'java.sh', '/usr/local/bin/java.sh'
+  run 'chmod +x /usr/local/bin/java.sh'
+end
+
+service_env = {
+  SERVICE_USER: 'myuser',
+  SERVICE_UID: '10001',
+  SERVICE_GROUP: 'mygroup',
+  SERVICE_GID: '10001',
+}
+
+['jdk', 'jre'].each do |j|
+
+  from "openjdk:8u131-#{j}-alpine"
+
+  commit = getenv_or_die('TRAVIS_COMMIT')
+
+  image_labels = {
+    msd_java_build_date: getenv_or_die('BUILD_DATE'),
+    msd_java_build_version: getenv_or_die('BUILD_VERSION'),
+    msd_java_build_commit: commit,
+  }
+
+  env service_env
+
+  create_user_and_group
+
+  configure_java
+
+  flatten
+  label image_labels
+
+  image_name = "#{getenv_or_die('IMAGE_ORG')}/msd-java:#{j}-"
+  tags = [commit]
+
+  if !getenv('TRAVIS_BRANCH').empty? && getenv('TRAVIS_PULL_REQUEST') == "false"
+    tags << "#{getenv('TRAVIS_BRANCH')}-#{commit[0..8]}"
+  end
+
+  tags << 'latest' unless getenv('TRAVIS_TAG').empty?
+
+  tags.each { |t| tag "#{image_name}#{t}" }
+end

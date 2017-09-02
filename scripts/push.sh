@@ -1,51 +1,50 @@
 #!/usr/bin/env bash
 
-set -ev
+set -o errexit
+set -o pipefail
+set -o nounset
 
-if [[ -z "$GROUP" ]] ; then
-    echo "Cannot find GROUP env var"
-    exit 1
-fi
+readonly labels=(
+  msd_java_build_version="${BUILD_VERSION}"
+  msd_java_build_commit="${TRAVIS_COMMIT}"
+)
 
-if [[ -z "$COMMIT" ]] ; then
-    echo "Cannot find COMMIT env var"
-    exit 1
-fi
+get_image_id() {
+  local filters=()
+  for l in "${labels[@]}" ; do
+    filters+=(--filter "label=${l}")
+  done
 
-push() {
-    DOCKER_PUSH=1;
-    while [ $DOCKER_PUSH -gt 0 ] ; do
+  docker image ls --quiet "${filters[@]}"
+}
+
+get_image_tags() {
+  for image in $(get_image_id) ; do
+    docker image inspect "${image}" --format '{{range .RepoTags}}{{.}} {{end}}'
+  done
+}
+
+do_push() {
+    local status=1;
+    while [ "${status}" -gt 0 ] ; do
         echo "Pushing $1";
-        docker push $1;
-        DOCKER_PUSH=$(echo $?);
-        if [[ "$DOCKER_PUSH" -gt 0 ]] ; then
-            echo "Docker push failed with exit code $DOCKER_PUSH";
+        docker push "$1";
+        status="$?";
+        if [[ "${status}" -gt 0 ]] ; then
+            echo "Docker push failed with exit code ${status}";
         fi;
     done;
 }
 
-tag_and_push_all() {
-    if [[ -z "$1" ]] ; then
-        echo "Please pass the tag"
-        exit 1
-    else
-        TAG=$1
-    fi
+# When building on Travis, login if credentials are provided, bail otherwise as it's probably a fork
+if [ -n "${TRAVIS+x}" ] && [ "${TRAVIS}" == "true" ] ; then
+  if [ -n "${DOCKER_EMAIL+x}" ] && [ -n "${DOCKER_USER+x}" ] && [ -n "${DOCKER_PASS+x}" ] ; then
+    docker login -e "${DOCKER_EMAIL}" -u "${DOCKER_USER}" -p "${DOCKER_PASS}"
+  else
+    exit
+  fi
+fi
 
-    DOCKER_REPO=${GROUP}/${REPO}
-    if [[ "$COMMIT" != "$TAG" ]]; then
-        docker tag ${DOCKER_REPO}:${COMMIT} ${DOCKER_REPO}:${TAG}
-    fi
-    push "$DOCKER_REPO:$TAG";
-}
-
-# Push snapshot when in master
-if [ "$TRAVIS_BRANCH" == "master" ] && [ "$TRAVIS_PULL_REQUEST" == "false" ]; then
-    tag_and_push_all master-${COMMIT:0:8}
-fi;
-
-# Push tag and latest when tagged
-if [ -n "$TRAVIS_TAG" ]; then
-    tag_and_push_all ${TRAVIS_TAG}
-    tag_and_push_all latest
-fi;
+for image in $(get_image_tags) ; do
+  do_push "${image}"
+done
