@@ -18,7 +18,7 @@ build: Boxfile
 	  --volume $(PWD):$(PWD) \
 	  --volume /var/run/docker.sock:/var/run/docker.sock \
 	  --workdir $(PWD) \
-	    boxbuilder/box:0.5.6 Boxfile
+	    boxbuilder/box:0.5.7 Boxfile
 
 push:
 	@./scripts/push.sh
