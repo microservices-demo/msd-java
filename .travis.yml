@@ -10,11 +10,14 @@ script:
   - make
 
 deploy:
-  provider: script
-  script: make push
-  on:
-    branch: master
-    tags: true
+  - provider: script
+    script: make push
+    on:
+      branch: master
+  - provider: script
+    script: make push
+    on:
+      tags: true
 
 notifications:
   slack:
