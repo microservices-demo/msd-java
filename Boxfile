@@ -13,8 +13,8 @@ def configure_java
   run 'apk add --no-progress --update libcap'
 
   run 'mkdir /lib64'
-  run 'ln -s /usr/lib/jvm/java-1.8-openjdk/jre/lib/amd64/server/libjvm.so /lib/libjvm.so'
-  run 'ln -s /usr/lib/jvm/java-1.8-openjdk/lib/amd64/jli/libjli.so /lib/libjli.so'
+  run 'ln -s /opt/openjdk-18/lib/server/libjvm.so /lib/libjvm.so'
+  run 'ln -s /opt/openjdk-18/lib/libjli.so /lib/libjli.so'
   run 'setcap "cap_net_bind_service=+ep" $(readlink -f $(which java))'
 
   copy 'java.sh', '/usr/local/bin/java.sh'
@@ -30,7 +30,7 @@ service_env = {
 
 ['jdk', 'jre'].each do |j|
 
-  from "openjdk:8u131-#{j}-alpine"
+  from "openjdk:18-jdk-alpine"
 
   commit = getenv_or_die('TRAVIS_COMMIT')
 
